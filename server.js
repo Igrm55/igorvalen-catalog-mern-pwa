@@ -96,9 +96,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // ==== Helpers ====
 function parseOptionalNumber(value) {
+ codex/fix-product-addition-issue-in-catalog-zshptb
   if (value === undefined || value === '') return undefined;
   const n = Number(String(value).replace(',', '.'));
   return Number.isNaN(n) ? undefined : n;
+
+  return value === undefined || value === '' ? undefined : Number(value);
+ main
 }
 
 function parseBoolean(value) {
