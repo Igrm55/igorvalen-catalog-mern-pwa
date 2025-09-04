@@ -94,6 +94,17 @@ function requireAuth(req, res, next) {
 // ==== Multer (upload memória) ====
 const upload = multer({ storage: multer.memoryStorage() });
 
+// ==== Helpers ====
+function parseOptionalNumber(value) {
+  if (value === undefined || value === '') return undefined;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isNaN(n) ? undefined : n;
+}
+
+function parseBoolean(value) {
+  return !(value === 'false' || value === false);
+}
+
 // ==== Rotas ====
 app.post('/api/login', (req, res) => {
   const { password } = req.body || {};
@@ -144,11 +155,11 @@ app.post('/api/products', requireAuth, upload.single('image'), async (req, res) 
       category: body.category,
       codes: body.codes || '',
       flavors: body.flavors || '',
-      priceUV: body.priceUV ? Number(body.priceUV) : undefined,
-      priceFV: body.priceFV ? Number(body.priceFV) : undefined,
-      priceUP: body.priceUP ? Number(body.priceUP) : undefined,
-      priceFP: body.priceFP ? Number(body.priceFP) : undefined,
-      active: body.active !== 'false',
+      priceUV: parseOptionalNumber(body.priceUV),
+      priceFV: parseOptionalNumber(body.priceFV),
+      priceUP: parseOptionalNumber(body.priceUP),
+      priceFP: parseOptionalNumber(body.priceFP),
+      active: parseBoolean(body.active),
     };
     if (req.file) {
       const uploadResult = await new Promise((resolve, reject) => {
@@ -179,11 +190,11 @@ app.put('/api/products/:id', requireAuth, upload.single('image'), async (req, re
       category: body.category,
       codes: body.codes || '',
       flavors: body.flavors || '',
-      priceUV: body.priceUV === undefined || body.priceUV === '' ? undefined : Number(body.priceUV),
-      priceFV: body.priceFV === undefined || body.priceFV === '' ? undefined : Number(body.priceFV),
-      priceUP: body.priceUP === undefined || body.priceUP === '' ? undefined : Number(body.priceUP),
-      priceFP: body.priceFP === undefined || body.priceFP === '' ? undefined : Number(body.priceFP),
-      active: body.active !== 'false',
+      priceUV: parseOptionalNumber(body.priceUV),
+      priceFV: parseOptionalNumber(body.priceFV),
+      priceUP: parseOptionalNumber(body.priceUP),
+      priceFP: parseOptionalNumber(body.priceFP),
+      active: parseBoolean(body.active),
     };
     if (req.file) {
       const uploadResult = await new Promise((resolve, reject) => {
