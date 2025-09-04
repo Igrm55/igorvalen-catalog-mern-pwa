@@ -444,6 +444,7 @@
     const change = (e)=>{ const { name, value, type, checked } = e.target; setProduct(p=>({...p, [name]: (type==='checkbox'? checked : value)})); };
     const onImage = (e)=>{ if (e.target.files && e.target.files[0]){ const file=e.target.files[0]; setImagePreview(URL.createObjectURL(file)); } };
 
+ codex/fix-product-addition-issue-in-catalog-ptvj1u
     const save = async ()=>{
       const fd = new FormData();
       Object.entries(product).forEach(([k,v])=>{ if(['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return; fd.append(k, v); });
@@ -457,6 +458,18 @@
       }
       setSaving(false);
     };
+
+      const save = async ()=>{
+        const fd = new FormData();
+        Object.entries(product).forEach(([k,v])=>{ if(['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return; fd.append(k, v); });
+        if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
+        try{
+          const r = id ? await api.updateProduct(id, fd) : await api.createProduct(fd);
+          if (r?.error){ alert('Erro ao salvar produto'); return; }
+          navigate('admin/products');
+        }catch(e){ alert('Erro ao salvar produto'); }
+      };
+ main
 
     if (loading) return <div className="text-center text-white text-2xl font-bold pt-20">Carregando...</div>;
     if (!product) return <div className="text-center text-red-500 text-2xl font-bold pt-20">Produto não encontrado.</div>;

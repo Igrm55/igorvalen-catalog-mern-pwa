@@ -101,6 +101,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // ==== Helpers ====
 function parseOptionalNumber(value) {
+ codex/fix-product-addition-issue-in-catalog-ptvj1u
   if (value === undefined || value === '') return undefined;
   const n = Number(String(value).replace(',', '.'));
   return Number.isNaN(n) ? undefined : n;
@@ -112,6 +113,28 @@ function parseBoolean(value) {
   return String(value).toLowerCase() === 'true' || value === 1 || value === '1';
 }
 
+
+ codex/fix-product-addition-issue-in-catalog-ox22hi
+  if (value === undefined || value === '') return undefined;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isNaN(n) ? undefined : n;
+
+ codex/fix-product-addition-issue-in-catalog-zshptb
+  if (value === undefined || value === '') return undefined;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isNaN(n) ? undefined : n;
+
+  return value === undefined || value === '' ? undefined : Number(value);
+ main
+ main
+}
+
+function parseBoolean(value) {
+  return !(value === 'false' || value === false);
+}
+
+ codex/fix-product-addition-issue-in-catalog-ox22hi
+ main
 async function saveImage(file) {
   if (!file) return undefined;
   if (CLOUDINARY_ENABLED) {
@@ -126,6 +149,10 @@ async function saveImage(file) {
       return uploadResult.secure_url;
     } catch (err) {
       console.error('[cloudinary] upload failed', err.message);
+ codex/fix-product-addition-issue-in-catalog-ptvj1u
+
+      return undefined;
+ main
     }
   }
   const filename = `${Date.now()}-${file.originalname}`.replace(/\s+/g, '_');
@@ -135,6 +162,11 @@ async function saveImage(file) {
   return '/uploads/' + filename;
 }
 
+ codex/fix-product-addition-issue-in-catalog-ptvj1u
+
+
+ main
+ main
 // ==== Rotas ====
 app.post('/api/login', (req, res) => {
   const { password } = req.body || {};
@@ -188,6 +220,7 @@ app.post('/api/products', requireAuth, upload.single('image'), async (req, res) 
       category: body.category,
       codes: body.codes || '',
       flavors: body.flavors || '',
+ codex/fix-product-addition-issue-in-catalog-ptvj1u
     };
 
     const priceFields = ['priceUV', 'priceFV', 'priceUP', 'priceFP'];
@@ -205,6 +238,17 @@ app.post('/api/products', requireAuth, upload.single('image'), async (req, res) 
     const img = await saveImage(req.file);
     if (img) data.imageUrl = img;
 
+
+      priceUV: parseOptionalNumber(body.priceUV),
+      priceFV: parseOptionalNumber(body.priceFV),
+      priceUP: parseOptionalNumber(body.priceUP),
+      priceFP: parseOptionalNumber(body.priceFP),
+      active: parseBoolean(body.active),
+    };
+      const img = await saveImage(req.file);
+      if (img) data.imageUrl = img;
+    // posição = último
+ main
     const last = await Product.findOne().sort({ position: -1 });
     data.position = last ? (last.position || 0) + 1 : 0;
     const created = await Product.create(data);
@@ -223,6 +267,7 @@ app.put('/api/products/:id', requireAuth, upload.single('image'), async (req, re
       category: body.category,
       codes: body.codes || '',
       flavors: body.flavors || '',
+ codex/fix-product-addition-issue-in-catalog-ptvj1u
     };
 
     const priceFields = ['priceUV', 'priceFV', 'priceUP', 'priceFP'];
@@ -244,6 +289,17 @@ app.put('/api/products/:id', requireAuth, upload.single('image'), async (req, re
     const updated = await Product.findByIdAndUpdate(req.params.id, data, {
       new: true,
     });
+
+      priceUV: parseOptionalNumber(body.priceUV),
+      priceFV: parseOptionalNumber(body.priceFV),
+      priceUP: parseOptionalNumber(body.priceUP),
+      priceFP: parseOptionalNumber(body.priceFP),
+      active: parseBoolean(body.active),
+    };
+      const img = await saveImage(req.file);
+      if (img) data.imageUrl = img;
+    const updated = await Product.findByIdAndUpdate(req.params.id, data, { new: true });
+ main
     res.json(updated);
   } catch (e) {
     console.error(e);
