@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 dotenv.config();
 
@@ -34,6 +35,10 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+const CLOUDINARY_ENABLED =
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET;
 
 // ==== Models ====
 const productSchema = new mongoose.Schema(
@@ -96,6 +101,11 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // ==== Helpers ====
 function parseOptionalNumber(value) {
+ codex/fix-product-addition-issue-in-catalog-ox22hi
+  if (value === undefined || value === '') return undefined;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isNaN(n) ? undefined : n;
+
  codex/fix-product-addition-issue-in-catalog-zshptb
   if (value === undefined || value === '') return undefined;
   const n = Number(String(value).replace(',', '.'));
@@ -103,12 +113,40 @@ function parseOptionalNumber(value) {
 
   return value === undefined || value === '' ? undefined : Number(value);
  main
+ main
 }
 
 function parseBoolean(value) {
   return !(value === 'false' || value === false);
 }
 
+ codex/fix-product-addition-issue-in-catalog-ox22hi
+async function saveImage(file) {
+  if (!file) return undefined;
+  if (CLOUDINARY_ENABLED) {
+    try {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'igorvalen/catalog' },
+          (err, r) => (err ? reject(err) : resolve(r))
+        );
+        stream.end(file.buffer);
+      });
+      return uploadResult.secure_url;
+    } catch (err) {
+      console.error('[cloudinary] upload failed', err.message);
+      return undefined;
+    }
+  }
+  const filename = `${Date.now()}-${file.originalname}`.replace(/\s+/g, '_');
+  const uploadPath = path.join(__dirname, 'public', 'uploads', filename);
+  await fs.promises.mkdir(path.dirname(uploadPath), { recursive: true });
+  await fs.promises.writeFile(uploadPath, file.buffer);
+  return '/uploads/' + filename;
+}
+
+
+ main
 // ==== Rotas ====
 app.post('/api/login', (req, res) => {
   const { password } = req.body || {};
@@ -165,16 +203,8 @@ app.post('/api/products', requireAuth, upload.single('image'), async (req, res) 
       priceFP: parseOptionalNumber(body.priceFP),
       active: parseBoolean(body.active),
     };
-    if (req.file) {
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'igorvalen/catalog' },
-          (err, r) => (err ? reject(err) : resolve(r))
-        );
-        stream.end(req.file.buffer);
-      });
-      data.imageUrl = uploadResult.secure_url;
-    }
+      const img = await saveImage(req.file);
+      if (img) data.imageUrl = img;
     // posição = último
     const last = await Product.findOne().sort({ position: -1 });
     data.position = last ? (last.position || 0) + 1 : 0;
@@ -200,16 +230,8 @@ app.put('/api/products/:id', requireAuth, upload.single('image'), async (req, re
       priceFP: parseOptionalNumber(body.priceFP),
       active: parseBoolean(body.active),
     };
-    if (req.file) {
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'igorvalen/catalog' },
-          (err, r) => (err ? reject(err) : resolve(r))
-        );
-        stream.end(req.file.buffer);
-      });
-      data.imageUrl = uploadResult.secure_url;
-    }
+      const img = await saveImage(req.file);
+      if (img) data.imageUrl = img;
     const updated = await Product.findByIdAndUpdate(req.params.id, data, { new: true });
     res.json(updated);
   } catch (e) {
