@@ -212,22 +212,22 @@
           <h2 className="text-3xl font-bold mb-2 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>Certificações</h2>
           <p className="max-w-2xl mx-auto mb-8 text-white" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.4)'}}>Seguimos recomendações rigorosas e controle de qualidade.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-9001.png', title:'ISO 9001', desc:'Gestão da qualidade e melhoria contínua.'},
-              {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-14001.png', title:'ISO 14001', desc:'Gestão ambiental e proteção do meio ambiente.'},
-              {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-45001-ES.png', title:'ISO 45001', desc:'Segurança e saúde ocupacional no trabalho.'},
-            ].map((it,idx)=>(
-              <div key={idx} className="text-white">
-                <div className="iso-round shadow-lg"><img src={it.src} alt={it.title} /></div>
-                <h3 className="font-bold text-lg">{it.title}</h3>
-                <p className="text-sm opacity-90">{it.desc}</p>
-              </div>
-            ))}
+              {[ 
+                {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-9001.png', title:'ISO 9001', desc:'Gestão da qualidade e melhoria contínua.'},
+                {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-14001.png', title:'ISO 14001', desc:'Gestão ambiental e proteção do meio ambiente.'},
+                {src:'https://group-ism.com/br/wp-content/uploads/2023/07/ism-45001-ES.png', title:'ISO 45001', desc:'Segurança e saúde ocupacional no trabalho.'},
+              ].map((it,idx)=>(
+                <div key={idx} className="text-white">
+                  <div className="iso-round shadow-lg"><img crossOrigin="anonymous" src={it.src} alt={it.title} /></div>
+                  <h3 className="font-bold text-lg">{it.title}</h3>
+                  <p className="text-sm opacity-90">{it.desc}</p>
+                </div>
+              ))}
           </div>
         </div>
 
         <div className="banner mb-6 rounded-2xl overflow-hidden shadow-lg">
-          <img src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
+          <img crossOrigin="anonymous" src="https://i.ibb.co/yFDqWmt0/IMG-0854.jpg" alt="Banner Topo" onError={(e)=>{e.target.src='https://placehold.co/1200x340/0f8a3a/ffffff?text=Banner'}}/>
         </div>
 
         <div className="panel p-6 mb-8">
@@ -266,7 +266,7 @@
                 <>
                   {group.category === 'Bebidas alcoólicas' && (
                     <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-                      <img src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto object-contain"/>
+                      <img crossOrigin="anonymous" src="https://i.ibb.co/Vp9Pshb4/IMG-0863.jpg" alt="Novas Cervejas" className="w-full h-auto object-contain"/>
                     </div>
                   )}
                   <h2 className="text-3xl font-bold text-white mb-4" style={{textShadow:'1px 1px 3px rgba(0,0,0,0.5)'}}>{group.category}</h2>
@@ -319,7 +319,17 @@
     const [loading,setLoading]=useState(true);
     const ref = useRef(null);
 
-    const load = async ()=>{ setLoading(true); const data = await api.getAdminProducts(); setProducts(Array.isArray(data)? data : []); setLoading(false); };
+    const load = async ()=>{ 
+      setLoading(true); 
+      try{
+        const data = await api.getAdminProducts(); 
+        setProducts(Array.isArray(data)? data : []);
+      }catch(e){
+        alert('Erro ao carregar produtos');
+        setProducts([]);
+      }
+      setLoading(false); 
+    };
     useEffect(()=>{ load() },[]);
 
     useEffect(()=>{
@@ -362,7 +372,7 @@
                   <td className="p-3 text-center handle text-gray-400 cursor-move">☰</td>
                   <td className="p-3 font-semibold text-gray-800">
                     <div className="flex items-center gap-3">
-                      <img src={p.imageUrl||'/img/placeholder.png'} className="w-12 h-12 object-contain rounded bg-gray-100 p-1"/>
+                      <img crossOrigin="anonymous" src={p.imageUrl||'/img/placeholder.png'} className="w-12 h-12 object-contain rounded bg-gray-100 p-1"/>
                       <div>{p.name}<div className="text-xs text-gray-500 font-normal">Códigos: {p.codes || '-'}</div></div>
                     </div>
                   </td>
@@ -383,7 +393,7 @@
         <div className="md:hidden space-y-4">
           {loading ? <div className="text-center text-white">Carregando...</div> : products.map(p => (
             <div key={p._id} className="panel p-4 flex gap-4 items-center">
-              <img src={p.imageUrl||'/img/placeholder.png'} className="w-16 h-16 object-contain rounded bg-gray-100 p-1"/>
+              <img crossOrigin="anonymous" src={p.imageUrl||'/img/placeholder.png'} className="w-16 h-16 object-contain rounded bg-gray-100 p-1"/>
               <div className="flex-grow">
                 <h3 className="font-bold text-gray-800">{p.name}</h3>
                 <p className="text-sm text-gray-500">{p.category}</p>
@@ -424,13 +434,16 @@
     const change = (e)=>{ const { name, value, type, checked } = e.target; setProduct(p=>({...p, [name]: (type==='checkbox'? checked : value)})); };
     const onImage = (e)=>{ if (e.target.files && e.target.files[0]){ const file=e.target.files[0]; setImagePreview(URL.createObjectURL(file)); } };
 
-    const save = async ()=>{
-      const fd = new FormData();
-      Object.entries(product).forEach(([k,v])=>{ if(['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return; fd.append(k, v); });
-      if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
-      if (id) await api.updateProduct(id, fd); else await api.createProduct(fd);
-      navigate('admin/products');
-    };
+      const save = async ()=>{
+        const fd = new FormData();
+        Object.entries(product).forEach(([k,v])=>{ if(['priceUV','priceUP','priceFV','priceFP'].includes(k) && (v===undefined||v===null||v==='')) return; fd.append(k, v); });
+        if (fileRef.current?.files?.[0]) fd.append('image', fileRef.current.files[0]);
+        try{
+          const r = id ? await api.updateProduct(id, fd) : await api.createProduct(fd);
+          if (r?.error){ alert('Erro ao salvar produto'); return; }
+          navigate('admin/products');
+        }catch(e){ alert('Erro ao salvar produto'); }
+      };
 
     if (loading) return <div className="text-center text-white text-2xl font-bold pt-20">Carregando...</div>;
     if (!product) return <div className="text-center text-red-500 text-2xl font-bold pt-20">Produto não encontrado.</div>;
@@ -467,7 +480,7 @@
             <div className="space-y-2">
               <label className="block font-semibold mb-1">Imagem do Produto</label>
               <div className="w-full h-52 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed">
-                {imagePreview? <img src={imagePreview} className="h-full w-full object-contain rounded-lg"/> : <span className="text-gray-500">Pré-visualização</span>}
+                  {imagePreview? <img crossOrigin="anonymous" src={imagePreview} className="h-full w-full object-contain rounded-lg"/> : <span className="text-gray-500">Pré-visualização</span>}
               </div>
               <input ref={fileRef} type="file" accept="image/*" onChange={onImage} className="hidden"/>
               <button onClick={()=>fileRef.current.click()} className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300">Adicionar Imagem</button>
