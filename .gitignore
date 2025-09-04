@@ -1,0 +1,14 @@
+﻿# Node/JS
+node_modules/
+dist/
+build/
+.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env (segredos)
+.env
+.env.*.local
