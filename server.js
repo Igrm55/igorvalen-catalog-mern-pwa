@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 dotenv.config();
 
@@ -34,6 +35,10 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+const CLOUDINARY_ENABLED =
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET;
 
 // ==== Models ====
 const productSchema = new mongoose.Schema(
@@ -94,6 +99,42 @@ function requireAuth(req, res, next) {
 // ==== Multer (upload memória) ====
 const upload = multer({ storage: multer.memoryStorage() });
 
+// ==== Helpers ====
+function parseOptionalNumber(value) {
+  if (value === undefined || value === '') return undefined;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isNaN(n) ? undefined : n;
+}
+
+function parseBoolean(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'boolean') return value;
+  return String(value).toLowerCase() === 'true' || value === 1 || value === '1';
+}
+
+async function saveImage(file) {
+  if (!file) return undefined;
+  if (CLOUDINARY_ENABLED) {
+    try {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'igorvalen/catalog' },
+          (err, r) => (err ? reject(err) : resolve(r))
+        );
+        stream.end(file.buffer);
+      });
+      return uploadResult.secure_url;
+    } catch (err) {
+      console.error('[cloudinary] upload failed', err.message);
+    }
+  }
+  const filename = `${Date.now()}-${file.originalname}`.replace(/\s+/g, '_');
+  const uploadPath = path.join(__dirname, 'public', 'uploads', filename);
+  await fs.promises.mkdir(path.dirname(uploadPath), { recursive: true });
+  await fs.promises.writeFile(uploadPath, file.buffer);
+  return '/uploads/' + filename;
+}
+
 // ==== Rotas ====
 app.post('/api/login', (req, res) => {
   const { password } = req.body || {};
@@ -139,32 +180,35 @@ app.get('/api/products/:id', requireAuth, async (req, res) => {
 app.post('/api/products', requireAuth, upload.single('image'), async (req, res) => {
   try {
     const body = req.body || {};
+    if (!body.name || !body.category)
+      return res.status(400).json({ error: 'missing fields' });
+
     const data = {
       name: body.name,
       category: body.category,
       codes: body.codes || '',
       flavors: body.flavors || '',
-      priceUV: body.priceUV ? Number(body.priceUV) : undefined,
-      priceFV: body.priceFV ? Number(body.priceFV) : undefined,
-      priceUP: body.priceUP ? Number(body.priceUP) : undefined,
-      priceFP: body.priceFP ? Number(body.priceFP) : undefined,
-      active: body.active !== 'false',
     };
-    if (req.file) {
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'igorvalen/catalog' },
-          (err, r) => (err ? reject(err) : resolve(r))
-        );
-        stream.end(req.file.buffer);
-      });
-      data.imageUrl = uploadResult.secure_url;
+
+    const priceFields = ['priceUV', 'priceFV', 'priceUP', 'priceFP'];
+    for (const f of priceFields) {
+      const raw = body[f];
+      const parsed = parseOptionalNumber(raw);
+      if (raw !== undefined && raw !== '' && parsed === undefined)
+        return res.status(400).json({ error: 'invalid number', field: f });
+      if (parsed !== undefined) data[f] = parsed;
     }
-    // posição = último
+
+    const activeParsed = parseBoolean(body.active);
+    data.active = activeParsed !== undefined ? activeParsed : true;
+
+    const img = await saveImage(req.file);
+    if (img) data.imageUrl = img;
+
     const last = await Product.findOne().sort({ position: -1 });
     data.position = last ? (last.position || 0) + 1 : 0;
     const created = await Product.create(data);
-    res.json(created);
+    res.status(201).json(created);
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'create_failed' });
@@ -179,23 +223,27 @@ app.put('/api/products/:id', requireAuth, upload.single('image'), async (req, re
       category: body.category,
       codes: body.codes || '',
       flavors: body.flavors || '',
-      priceUV: body.priceUV === undefined || body.priceUV === '' ? undefined : Number(body.priceUV),
-      priceFV: body.priceFV === undefined || body.priceFV === '' ? undefined : Number(body.priceFV),
-      priceUP: body.priceUP === undefined || body.priceUP === '' ? undefined : Number(body.priceUP),
-      priceFP: body.priceFP === undefined || body.priceFP === '' ? undefined : Number(body.priceFP),
-      active: body.active !== 'false',
     };
-    if (req.file) {
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'igorvalen/catalog' },
-          (err, r) => (err ? reject(err) : resolve(r))
-        );
-        stream.end(req.file.buffer);
-      });
-      data.imageUrl = uploadResult.secure_url;
+
+    const priceFields = ['priceUV', 'priceFV', 'priceUP', 'priceFP'];
+    for (const f of priceFields) {
+      const raw = body[f];
+      const parsed = parseOptionalNumber(raw);
+      if (raw !== undefined && raw !== '' && parsed === undefined)
+        return res.status(400).json({ error: 'invalid number', field: f });
+      if (parsed !== undefined) data[f] = parsed;
     }
-    const updated = await Product.findByIdAndUpdate(req.params.id, data, { new: true });
+
+    const activeParsed = parseBoolean(body.active);
+    if (activeParsed !== undefined) data.active = activeParsed;
+
+    const img = await saveImage(req.file);
+    if (img) data.imageUrl = img;
+
+    Object.keys(data).forEach((k) => data[k] === undefined && delete data[k]);
+    const updated = await Product.findByIdAndUpdate(req.params.id, data, {
+      new: true,
+    });
     res.json(updated);
   } catch (e) {
     console.error(e);

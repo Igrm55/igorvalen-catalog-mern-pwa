@@ -12,3 +12,7 @@ yarn-error.log*
 # Env (segredos)
 .env
 .env.*.local
+
+# Uploaded images
+public/uploads/*
+!public/uploads/.gitkeep
