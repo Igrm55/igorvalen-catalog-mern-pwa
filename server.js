@@ -101,15 +101,26 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // ==== Helpers ====
 function parseOptionalNumber(value) {
+ codex/fix-product-addition-issue-in-catalog-ox22hi
   if (value === undefined || value === '') return undefined;
   const n = Number(String(value).replace(',', '.'));
   return Number.isNaN(n) ? undefined : n;
+
+ codex/fix-product-addition-issue-in-catalog-zshptb
+  if (value === undefined || value === '') return undefined;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isNaN(n) ? undefined : n;
+
+  return value === undefined || value === '' ? undefined : Number(value);
+ main
+ main
 }
 
 function parseBoolean(value) {
   return !(value === 'false' || value === false);
 }
 
+ codex/fix-product-addition-issue-in-catalog-ox22hi
 async function saveImage(file) {
   if (!file) return undefined;
   if (CLOUDINARY_ENABLED) {
@@ -134,6 +145,8 @@ async function saveImage(file) {
   return '/uploads/' + filename;
 }
 
+
+ main
 // ==== Rotas ====
 app.post('/api/login', (req, res) => {
   const { password } = req.body || {};
